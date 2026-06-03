@@ -4,7 +4,7 @@ def build_agent_message_sequential_latent_mas(role: str, question: str, context:
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
     assert method in ["latent_mas"], "this prompt only for latent_mas method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    
 
     if role == "planner":
         user_prompt = f"""You are a Planner Agent. Given an input question, design a clear, step-by-step plan for how to solve the question.
@@ -120,7 +120,7 @@ def build_agent_message_hierarchical_latent_mas(role: str, question: str, contex
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
     assert method in ["latent_mas"], "this prompt only for latent_mas method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    
 
     if args.task in ['gsm8k', 'aime2024', 'aime2025']:
         if role == "planner":
@@ -343,7 +343,7 @@ def build_agent_messages_sequential_text_mas(role: str, question: str, context: 
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
     assert method in ["text_mas"], "only for text_mas method"
-    assert "qwen" in args.model_name.lower(), "only for qwen models"
+    
 
     # truncate context if needed
     ctx = context[: args.text_mas_context_length]
@@ -513,7 +513,7 @@ def build_agent_messages_hierarchical_text_mas(role: str, question: str, context
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
     
     assert method in ["text_mas"], "this prompt only for text_mas method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    
     
     if args.task in ['gsm8k', 'aime2024', 'aime2025']:
         if role == "planner":
@@ -696,7 +696,7 @@ def build_agent_messages_single_agent(question: str, args=None):
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
     assert args.method in ["baseline"], "this prompt only for baseline method (single agent)"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    
 
     task = args.task
 
