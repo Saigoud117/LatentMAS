@@ -101,12 +101,13 @@ class ModelWrapper:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 torch_dtype=(torch.bfloat16 if torch.cuda.is_available() else torch.float32),
+                device_map="auto"
             )
 
         if len(self.tokenizer) != self.model.get_input_embeddings().weight.shape[0]:
             self.model.resize_token_embeddings(len(self.tokenizer))
 
-        self.model.to(device)
+        # self.model.to(device)
         self.model.eval()
 
         if hasattr(self.model.config, "use_cache"):
