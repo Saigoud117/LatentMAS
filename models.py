@@ -1360,7 +1360,6 @@
 #             curr_output_embedding.append(latent_embed.detach())
 
 #         return past, torch.cat(curr_output_embedding, dim=1)
-
 import os
 import csv
 import torch
@@ -1768,6 +1767,16 @@ class ModelWrapper:
         attention_mask: torch.Tensor,
         past_key_values,
     ):
+        """
+        One latent autoregressive step.
+        For Gemma4:
+        - Do NOT pass input_ids + inputs_embeds together.
+        - Do NOT pass inputs_embeds alone without per_layer_inputs.
+        - Correct path is inputs_embeds + per_layer_inputs.
+
+        For Qwen/Llama:
+        - Standard inputs_embeds path is used.
+        """
         past_len = _past_length(past_key_values)
 
         cache_position = torch.arange(
@@ -1776,6 +1785,9 @@ class ModelWrapper:
             dtype=torch.long,
             device=latent_embed.device,
         )
+        #====================================
+        #Gemma4 path
+        #========================
 
         if (
             self._is_gemma4()
@@ -1783,13 +1795,32 @@ class ModelWrapper:
             and hasattr(self.model.model, "language_model")
         ):
             lm = self.model.model.language_model
-            dummy_input_ids = self._make_dummy_input_ids(latent_embed)
+            B, L, _ = latent_embed.shape
 
-            print("Gemma4 latent forward using dummy_input_ids:", dummy_input_ids.shape)
+            #Create dummy token ids only to generate Gemma4 per-layer inputs.
+            # These dummy ids are NOT passed into lm.forward().
+            dummy_token_id = self.tokenizer.pad_token_id
+            if dummy_token_id is None:
+                dummy_token_id = self.tokenizer.eos_token_id
+            if dummy_token_id is None:
+                dummy_token_id = 0
+            # dummy_input_ids = self._make_dummy_input_ids(latent_embed)
+            dummy_input_ids = torch.full((B,L),fill_value=int(dummy_token_id),dtype=torch.long,device=latent_embed.device,)
+            #Gemma4 needs per_layer_inputs because arbitrary latent embeddings
+            #cannot be reverse-mapped safely to token ids.
+            with torch.no_grad():
+                try:
+                    per_layer_inputs = lm.get_per_layer_inputs(dummy_input_ids,None,)
+                except TypeError:
+                    per_layer_inputs = lm.get_per_layer_inputs(input_ids = dummy_input_ids, inputs_embeds = None,)
+            print("Gemma4 latent forward using per_layer_inputs")
+
+            # print("Gemma4 latent forward using dummy_input_ids:", dummy_input_ids.shape)
 
             kwargs = dict(
-                input_ids=dummy_input_ids,
+                # input_ids=dummy_input_ids,
                 inputs_embeds=latent_embed,
+                per_layer_inputs=per_layer_inputs,
                 attention_mask=attention_mask,
                 past_key_values=past_key_values,
                 use_cache=True,
