@@ -1779,6 +1779,12 @@ class ModelWrapper:
             and hasattr(self.model.model, "language_model")
         ):
             lm = self.model.model.language_model
+            print("=" * 60)
+            print("latent_embed shape : ", latent_embed.shape)
+            print("latent_embed dtype : ", latent_embed.dtype)
+            print("latent_embed MB:", latent_embed.numel() * latent_embed.element_size() / 1024**2)
+            print("GPU0 before:",torch.cuda.memory_allocated(0)/1024**3,"GB")
+            print("GPU1 before:",torch.cuda.memory_allocated(1)/1024**3,"GB")
 
             # ==================================================
             # TRUE LATENT PLE
@@ -1791,7 +1797,12 @@ class ModelWrapper:
                     per_layer_inputs=None,
                 )
 
-            print("Gemma4 TRUE latent PLE:", per_layer_inputs.shape)
+            print("Gemma4 TRUE latent PLE_shape:", per_layer_inputs.shape)
+            print("per_layer_inputs MB:",per_layer_inputs.numel()* per_layer_inputs.element_size()/ 1024**2)
+            print("GPU0 after:",torch.cuda.memory_allocated(0)/1024**3,"GB")
+            print("GPU1 after:",torch.cuda.memory_allocated(1)/1024**3,"GB")
+            print("=" * 60)
+
 
             kwargs = dict(
                 inputs_embeds=latent_embed,
