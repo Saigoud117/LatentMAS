@@ -1743,24 +1743,6 @@ class ModelWrapper:
 
         return torch.multinomial(probs, num_samples=1)
 
-    def _make_dummy_input_ids(self, latent_embed: torch.Tensor) -> torch.Tensor:
-        B, L, _ = latent_embed.shape
-
-        dummy_token_id = self.tokenizer.pad_token_id
-        if dummy_token_id is None:
-            dummy_token_id = self.tokenizer.eos_token_id
-        if dummy_token_id is None:
-            dummy_token_id = 0
-
-        dummy_input_ids = torch.full(
-            (B, L),
-            fill_value=int(dummy_token_id),
-            dtype=torch.long,
-            device=latent_embed.device,
-        )
-
-        return dummy_input_ids
-
     def _latent_forward_step(
         self,
         latent_embed: torch.Tensor,
@@ -1795,30 +1777,21 @@ class ModelWrapper:
             and hasattr(self.model.model, "language_model")
         ):
             lm = self.model.model.language_model
-            B, L, _ = latent_embed.shape
 
-            #Create dummy token ids only to generate Gemma4 per-layer inputs.
-            # These dummy ids are NOT passed into lm.forward().
-            dummy_token_id = self.tokenizer.pad_token_id
-            if dummy_token_id is None:
-                dummy_token_id = self.tokenizer.eos_token_id
-            if dummy_token_id is None:
-                dummy_token_id = 0
-            # dummy_input_ids = self._make_dummy_input_ids(latent_embed)
-            dummy_input_ids = torch.full((B,L),fill_value=int(dummy_token_id),dtype=torch.long,device=latent_embed.device,)
-            #Gemma4 needs per_layer_inputs because arbitrary latent embeddings
-            #cannot be reverse-mapped safely to token ids.
+            # ==================================================
+            # TRUE LATENT PLE
+            # Derive the per-layer inputs directly from the latent
+            # embedding (content-aware) instead of from dummy token ids.
+            # ==================================================
             with torch.no_grad():
-                try:
-                    per_layer_inputs = lm.get_per_layer_inputs(dummy_input_ids,None,)
-                except TypeError:
-                    per_layer_inputs = lm.get_per_layer_inputs(input_ids = dummy_input_ids, inputs_embeds = None,)
-            print("Gemma4 latent forward using per_layer_inputs")
+                per_layer_inputs = lm.project_per_layer_inputs(
+                    latent_embed,
+                    per_layer_inputs=None,
+                )
 
-            # print("Gemma4 latent forward using dummy_input_ids:", dummy_input_ids.shape)
+            print("Gemma4 TRUE latent PLE:", per_layer_inputs.shape)
 
             kwargs = dict(
-                # input_ids=dummy_input_ids,
                 inputs_embeds=latent_embed,
                 per_layer_inputs=per_layer_inputs,
                 attention_mask=attention_mask,
