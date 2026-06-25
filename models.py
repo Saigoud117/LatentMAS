@@ -1623,7 +1623,7 @@ class ModelWrapper:
 
         print("W_in shape:", input_weight.shape)
         print("W_out shape:", output_weight.shape)
-        print("Wa memory:",realign_matrix.numel() *realign_matrix.element_size() / 1024**2, "MB")
+        # print("Wa memory:",realign_matrix.numel() *realign_matrix.element_size() / 1024**2, "MB")
 
 
         gram = torch.matmul(output_weight.T, output_weight)
@@ -1636,6 +1636,7 @@ class ModelWrapper:
 
         rhs = torch.matmul(output_weight.T, input_weight)
         realign_matrix = torch.linalg.solve(gram, rhs)
+        print("Wa memory:",realign_matrix.numel() *realign_matrix.element_size() / 1024**2, "MB")
 
         target_norm = input_weight.norm(dim=1).mean().detach()
 
