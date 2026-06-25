@@ -1623,6 +1623,8 @@ class ModelWrapper:
 
         print("W_in shape:", input_weight.shape)
         print("W_out shape:", output_weight.shape)
+        print("Wa memory:",realign_matrix.numel() *realign_matrix.element_size() / 1024**2, "MB")
+
 
         gram = torch.matmul(output_weight.T, output_weight)
         reg = 1e-5 * torch.eye(
